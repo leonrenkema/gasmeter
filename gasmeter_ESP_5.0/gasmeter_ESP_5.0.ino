@@ -191,7 +191,10 @@ void loop() {
     staat=MIGHT_BE_OFF;
     Serial.println(F("Gasmeterstand re-read from EEPROM"));
     }
-    
+
+  /*
+   *  if serial input works, then this can be removed, also the setup for it. TODO: test serial input.
+   * 
   //if (gasMeter < 1) {
   if(staat == NOT_SET || MIGHT_BE_OFF){ // somehow an exception gets thrown when anything is posted to makerspace/gasmeter/set
     Serial.println(F("Gasmeter not set"));
@@ -205,6 +208,20 @@ void loop() {
         }
       }
     }
+  
+  
+  */
+
+
+  // serial input to set gasmeter value.
+  if( Serial.available() >= 14 ){ // "set 123456,78" is 13 + termination is 14. 
+    if(Serial.find("set")){
+      gasMeter = Serial.parseFloat(); //  seems a very arduino-y way of doing things
+      Serial.print(F("Set gasMeterValue: "));
+      Serial.println(gasMeter);
+      staat = OK;
+    }
+  }
   
   gasMeter = gas_Meter_Reader(gasMeter);
   temperature = DS_reader (); 
