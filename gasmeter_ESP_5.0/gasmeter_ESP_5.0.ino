@@ -148,7 +148,7 @@ Serial.println("checking EEPROM for initial meterstand");
 
   ReadEeprom(i,&uitFlash,&unused);
   if(!unused){ // only if there actually is a valid meterstand in EEPROM    
-    if (uitFlash.meterstand > grootsteSoFar){ // otherwise, pick the biggest one as the most recent (TODO: handle "ovf" )
+    if ( (uitFlash.meterstand != 0) & (uitFlash.meterstand > grootsteSoFar) & (uitFlash.meterstand < 999999.99 ) ){ // otherwise, pick the biggest one as the most recent but within reason
       grootsteSoFar = uitFlash.meterstand;
       globalEepromAddres=i;                  // and store it's addres
       Serial.println("meterstand gevonden: ");
