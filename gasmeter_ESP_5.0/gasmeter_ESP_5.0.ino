@@ -107,7 +107,7 @@ unsigned int globalEepromAddres;
 void setup() {
 
   Serial.begin(115200);
-  delay(5000); // workaround so I can see bootup messages...
+  delay(500); // workaround so I can see bootup messages...
 
   Serial.println(F("Adafruit MQTT demo, aangepast voor de gasmeter van MSL"));
 
@@ -147,8 +147,8 @@ Serial.println("checking EEPROM for initial meterstand");
   bool unused = true;
 
   ReadEeprom(i,&uitFlash,&unused);
-  if(!unused){ // only if there actually is a valid meterstand in EEPROM
-    if (uitFlash.meterstand > grootsteSoFar){ // otherwise, pick the biggest one as the most recent
+  if(!unused){ // only if there actually is a valid meterstand in EEPROM    
+    if (uitFlash.meterstand > grootsteSoFar){ // otherwise, pick the biggest one as the most recent (TODO: handle "ovf" )
       grootsteSoFar = uitFlash.meterstand;
       globalEepromAddres=i;                  // and store it's addres
       Serial.println("meterstand gevonden: ");
@@ -514,7 +514,7 @@ void ReadEeprom(int addres, splitsMeterstandInBytes* waarde, bool* unused){
     Serial.print(waarde->bytes[j]);
     Serial.print("\n");
    */ 
-    if(waarde->bytes[j] != 0xFF) unused = false; // when all bytes are 0xFF this location is empty 
+    if(waarde->bytes[j] != 0xFF) *unused = false; // when all bytes are 0xFF this location is empty 
   }
 };
 
