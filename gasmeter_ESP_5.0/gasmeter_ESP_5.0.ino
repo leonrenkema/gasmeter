@@ -374,7 +374,7 @@ float gas_Meter_Reader(float gasMeter) {
     } break; 
     
     case count: { 
-      gasMeter += 0.01;  // 0,01 m3 per omwenteling (last digit has a mirror too so I' m using that one)
+      gasMeter += 0.1;  // 0,1 m3 per omwenteling (last digit has a mirror, but second to last digits gets incremented when mirror is seen)
       #ifdef debug_gas
         Serial.print("State: count; gasMeterValue: "); 
         Serial.println(gasMeter); 
@@ -505,9 +505,11 @@ void ReadEeprom(int addres, splitsMeterstandInBytes* waarde, bool* unused){
   for(int j = 0;j<sizeof(float);j++){
     waarde->bytes[j] = EEPROM.read(addres+j);
    
+   /* // was usefull for debug
     Serial.print("EEadr:: ");
     Serial.print(addres+j);
     Serial.print("\n");
+   */
    
    /* 
     Serial.print("EEval: ");
