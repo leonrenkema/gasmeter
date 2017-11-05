@@ -182,7 +182,7 @@ void loop() {
  
   //read from EEPROM location with the most recent / biggest gasmeterstand, and when that's bigger then what's in RAM, copy it and change staat to "might be off" because apearently gasmeterreader missed something
   // (Because of power down?)
-  bool unused;
+  bool unused, SerIn_flag=false;
   splitsMeterstandInBytes uitFlash;
   ReadEeprom(globalEepromAddres,&uitFlash,&unused);
   if(!unused && uitFlash.meterstand > gasMeter){ //only if actually read from a in use EEPROM location
@@ -193,7 +193,7 @@ void loop() {
     }
 
   /*
-   *  if serial input works, then this can be removed, also the setup for it. TODO: test serial input.
+   *  if serial input works, then this can be removed, also the setup for it.
    * 
   //if (gasMeter < 1) {
   if(staat == NOT_SET || MIGHT_BE_OFF){ // somehow an exception gets thrown when anything is posted to makerspace/gasmeter/set
@@ -220,6 +220,7 @@ void loop() {
       Serial.print(F("Set gasMeterValue: "));
       Serial.println(gasMeter);
       staat = OK;
+      SerIn_flag=true; // so the new setting gets written to EEPROM immedeately
     }
   }
   
@@ -275,7 +276,7 @@ void loop() {
   start_time = millis(); 
 
   // save gasmeter value to EEPROM every xx minutes (But only if it has changed), preferably in a way with wear leveling...
-  if(millis()- last_Write > WRITE_INTERVAL_MILLIS){
+  if ((millis()- last_Write > WRITE_INTERVAL_MILLIS) | SerIn_flag) {
     if(gasMeter!=prevGasMeter){ // only write if value is changed (Even if changed down. Because maybe that 'll come in usefull someday)
     // Arduino EEPROM libs do that automatically, but my "wear leveling" (by incrementing addres each time) ruins that, also I don't know if ESP EEPROM libs do that at all anyway...   
     
@@ -293,6 +294,7 @@ void loop() {
     Serial.println(F("Written gasmeterstand to EEPROM location "));
     Serial.print(globalEepromAddres);
     Serial.print("\n");
+    SerIn_flag = false;
     }
   }
   
