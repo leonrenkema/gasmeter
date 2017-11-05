@@ -143,12 +143,12 @@ Serial.println("checking EEPROM for initial meterstand");
  // check EEPROM for old gasmeterstanden.
  for(int i = 0;i<(NUM_EEPROM*sizeof(float));i+=sizeof(float)){
   splitsMeterstandInBytes uitFlash;
-  float grootsteSoFar = 0;
+  float grootsteSoFar = 0.02; // because starting at 0 has "(0 > 0)=true" issues...
   bool unused = true;
 
   ReadEeprom(i,&uitFlash,&unused);
   if(!unused){ // only if there actually is a valid meterstand in EEPROM    
-    if ( (uitFlash.meterstand != 0) & (uitFlash.meterstand > grootsteSoFar) & (uitFlash.meterstand < 999999.99 ) ){ // otherwise, pick the biggest one as the most recent but within reason
+    if ( (uitFlash.meterstand > grootsteSoFar) & (uitFlash.meterstand < 999999.99 ) ){ // otherwise, pick the biggest one as the most recent but within reason
       grootsteSoFar = uitFlash.meterstand;
       globalEepromAddres=i;                  // and store it's addres
       Serial.println("meterstand gevonden: ");
