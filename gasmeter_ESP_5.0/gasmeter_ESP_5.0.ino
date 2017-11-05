@@ -29,8 +29,8 @@ NOTES / uitbreidingen Lucas:
 #define SENSOR_PIN A0           // Gas meter sensor pin (analog)
 #define DS_PIN 2                // "D4", DS18S20 pin en blauwe led
 
-#define DETECT 500              // Analog value "definately a mirror"
-#define RELEASE 700             // Analog value "definately no mirror"
+#define DETECT 650              // Analog value "definately a mirror" (Changed! 500 is too low)
+#define RELEASE 730             // Analog value "definately no mirror" 
 #define SEND_INTERVAL 5000      // minimal milliseconds between message
 
 #define WRITE_INTERVAL_MILLIS 1800000 // 15 minutes = 900.000ms ; 30 minutes = 1.800.000 millis
@@ -86,7 +86,7 @@ Adafruit_MQTT_Publish gasMeterFeed = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "
 Adafruit_MQTT_Publish gasMeterStatus = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "makerspace/gasmeter/status");
 
 // Setup a feed called 'setMeterFeed' for subscribing to changes.
-Adafruit_MQTT_Subscribe setMeterFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "makerspace/gasmeter/set");
+//Adafruit_MQTT_Subscribe setMeterFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "makerspace/gasmeter/set");
 
 /*************************** Sketch Code ************************************/
 
@@ -107,7 +107,7 @@ unsigned int globalEepromAddres;
 void setup() {
 
   Serial.begin(115200);
-  delay(10);
+  delay(5000); // workaround so I can see bootup messages...
 
   Serial.println(F("Adafruit MQTT demo, aangepast voor de gasmeter van MSL"));
 
@@ -127,7 +127,7 @@ void setup() {
   Serial.println("IP address: "); Serial.println(WiFi.localIP());
 
   // Setup MQTT subscription for onoff feed.
-  mqtt.subscribe(&setMeterFeed);
+//  mqtt.subscribe(&setMeterFeed);
 
   pinMode(LOAD_PIN, OUTPUT);
   digitalWrite (LOAD_PIN,LOW); 
@@ -139,7 +139,7 @@ void setup() {
   EEPROM.begin( NUM_EEPROM*sizeof(float)  ); // enough EEPROM space for 20 "gasmeter" writes.
 
 
-
+Serial.println("checking EEPROM for initial meterstand");
  // check EEPROM for old gasmeterstanden.
  for(int i = 0;i<(NUM_EEPROM*sizeof(float));i+=sizeof(float)){
   splitsMeterstandInBytes uitFlash;
@@ -151,6 +151,9 @@ void setup() {
     if (uitFlash.meterstand > grootsteSoFar){ // otherwise, pick the biggest one as the most recent
       grootsteSoFar = uitFlash.meterstand;
       globalEepromAddres=i;                  // and store it's addres
+      Serial.println("meterstand gevonden: ");
+      Serial.print(grootsteSoFar);
+      Serial.print("\n"); 
     }
     // if there is multiple with the same value this won't work. Writing is suposed to not write when value is not changed.
   }
@@ -319,6 +322,9 @@ void MQTT_connect() {
        mqtt.disconnect();
        delay(5000);  // wait 5 seconds
        retries--;
+
+        // TODO: staat = MIGHT_BE_OFF, because it' s not in its pulse detecting loop when it has lost WiFi. But Staat is not globlal.
+       
        if (retries == 0) {
          // basically die and wait for WDT to reset me
          while (1);
@@ -368,7 +374,7 @@ float gas_Meter_Reader(float gasMeter) {
     } break; 
     
     case count: { 
-      gasMeter += 0.1;  // 0,1 m3 per omwenteling
+      gasMeter += 0.01;  // 0,01 m3 per omwenteling (last digit has a mirror too so I' m using that one)
       #ifdef debug_gas
         Serial.print("State: count; gasMeterValue: "); 
         Serial.println(gasMeter); 
@@ -498,6 +504,16 @@ void ReadEeprom(int addres, splitsMeterstandInBytes* waarde, bool* unused){
   *unused = true;
   for(int j = 0;j<sizeof(float);j++){
     waarde->bytes[j] = EEPROM.read(addres+j);
+   
+    Serial.print("EEadr:: ");
+    Serial.print(addres+j);
+    Serial.print("\n");
+   
+   /* 
+    Serial.print("EEval: ");
+    Serial.print(waarde->bytes[j]);
+    Serial.print("\n");
+   */ 
     if(waarde->bytes[j] != 0xFF) unused = false; // when all bytes are 0xFF this location is empty 
   }
 };
