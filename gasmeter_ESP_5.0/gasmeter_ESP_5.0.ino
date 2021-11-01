@@ -29,13 +29,13 @@ NOTES / uitbreidingen Lucas:
 #define SENSOR_PIN A0           // Gas meter sensor pin (analog)
 #define DS_PIN 2                // "D4", DS18S20 pin en blauwe led
 
-#define DETECT 650              // Analog value "definately a mirror" (Changed! 500 is too low)
-#define RELEASE 730             // Analog value "definately no mirror" 
+#define DETECT 890              // Analog value "definately a mirror" (Changed! 500 is too low)
+#define RELEASE 920             // Analog value "definately no mirror" 
 #define SEND_INTERVAL 5000      // minimal milliseconds between message
 
 #define WRITE_INTERVAL_MILLIS 1800000 // 15 minutes = 900.000ms ; 30 minutes = 1.800.000 millis
 #define NUM_EEPROM 20         // number of EEPROM addresses used. (It will use them evenly in a round-robin fasion for wear leveling)
-#define INITIAL_GASMETER 209570.57
+#define INITIAL_GASMETER 211382.00
 
 #define debug_gas           // gasmeter routine debug messages
 // #define debug_temp          // DS18S20 routine debug messages
