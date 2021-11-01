@@ -124,10 +124,11 @@ void setup() {
   Serial.println();
 
   Serial.println("WiFi connected");
-  Serial.println("IP address: "); Serial.println(WiFi.localIP());
+  Serial.println("IP address: "); 
+  Serial.println(WiFi.localIP());
 
   // Setup MQTT subscription for onoff feed.
-//  mqtt.subscribe(&setMeterFeed);
+  //  mqtt.subscribe(&setMeterFeed);
 
   pinMode(LOAD_PIN, OUTPUT);
   digitalWrite (LOAD_PIN,LOW); 
@@ -138,28 +139,25 @@ void setup() {
 
   EEPROM.begin( NUM_EEPROM*sizeof(float)  ); // enough EEPROM space for 20 "gasmeter" writes.
 
-
-Serial.println("checking EEPROM for initial meterstand");
- // check EEPROM for old gasmeterstanden.
- for(int i = 0;i<(NUM_EEPROM*sizeof(float));i+=sizeof(float)){
-  splitsMeterstandInBytes uitFlash;
-  float grootsteSoFar = 0.02; // because starting at 0 has "(0 > 0)=true" issues...
-  bool unused = true;
-
-  ReadEeprom(i,&uitFlash,&unused);
-  if(!unused){ // only if there actually is a valid meterstand in EEPROM    
-    if ( (uitFlash.meterstand > grootsteSoFar) & (uitFlash.meterstand < 999999.99 ) ){ // otherwise, pick the biggest one as the most recent but within reason
-      grootsteSoFar = uitFlash.meterstand;
-      globalEepromAddres=i;                  // and store it's addres
-      Serial.println("meterstand gevonden: ");
-      Serial.print(grootsteSoFar);
-      Serial.print("\n"); 
+  Serial.println("checking EEPROM for initial meterstand");
+  // check EEPROM for old gasmeterstanden.
+  for(int i = 0;i<(NUM_EEPROM*sizeof(float));i+=sizeof(float)){
+    splitsMeterstandInBytes uitFlash;
+    float grootsteSoFar = 0.02; // because starting at 0 has "(0 > 0)=true" issues...
+    bool unused = true;
+  
+    ReadEeprom(i,&uitFlash,&unused);
+    if(!unused){ // only if there actually is a valid meterstand in EEPROM    
+      if ( (uitFlash.meterstand > grootsteSoFar) & (uitFlash.meterstand < 999999.99 ) ){ // otherwise, pick the biggest one as the most recent but within reason
+        grootsteSoFar = uitFlash.meterstand;
+        globalEepromAddres=i;                  // and store it's addres
+        Serial.println("meterstand gevonden: ");
+        Serial.print(grootsteSoFar);
+        Serial.print("\n"); 
+      }
+      // if there is multiple with the same value this won't work. Writing is suposed to not write when value is not changed.
     }
-    // if there is multiple with the same value this won't work. Writing is suposed to not write when value is not changed.
   }
-  
-  }
-  
 }
 
 void loop() {
@@ -180,7 +178,7 @@ void loop() {
   // try to spend your time here
 
   // setting of gasmeter
-    Adafruit_MQTT_Subscribe *subscription;
+  Adafruit_MQTT_Subscribe *subscription;
 
  
   //read from EEPROM location with the most recent / biggest gasmeterstand, and when that's bigger then what's in RAM, copy it and change staat to "might be off" because apearently gasmeterreader missed something
@@ -193,7 +191,7 @@ void loop() {
     prevGasMeter = gasMeter; // so it does not get written unless it changes first.
     staat=MIGHT_BE_OFF;
     Serial.println(F("Gasmeterstand re-read from EEPROM"));
-    }
+  }
 
   /*
    *  if serial input works, then this can be removed, also the setup for it.
@@ -218,7 +216,7 @@ void loop() {
 
   // serial input to set gasmeter value.
   if( Serial.available() >= 14 ){ // "set 123456,78" is 13 + termination is 14. 
-    if(Serial.find("set")){
+    if(Serial.find("set")) {
       gasMeter = Serial.parseFloat(); //  seems a very arduino-y way of doing things
       Serial.print(F("Set gasMeterValue: "));
       Serial.println(gasMeter);
@@ -247,26 +245,26 @@ void loop() {
     Serial.print(F("\nSending gasMeter "));
     Serial.print(gasMeter);
     Serial.print("...");
-    if (! gasMeterFeed.publish(gasMeter)) {
-    Serial.println(F("Failed"));
-    } else {
+    if (gasMeterFeed.publish(gasMeter)) {
       Serial.println(F("OK!"));
+    } else {
+      Serial.println(F("Failed"));
     }
     delay(50);
   
 
-    if(staat!=OK){
+    if(staat!=OK) {
       Serial.print(F("\nSending gasMeterStatus "));
       Serial.print(staat);
       Serial.print("...");
       if (! gasMeterStatus.publish("Reading might be off. Dear human, please verify and correct")){ 
         // would need powercycle or... we could change the software to accept changes even when ther is a value allready...
-      Serial.println(F("Failed"));
+        Serial.println(F("Failed"));
       } else {
         Serial.println(F("OK!"));
       }
       delay(50);
-  }
+    }
   }
   // Wait up to 100 ms in this idle routine
   
@@ -281,26 +279,25 @@ void loop() {
   // save gasmeter value to EEPROM every xx minutes (But only if it has changed), preferably in a way with wear leveling...
   if ((millis()- last_Write > WRITE_INTERVAL_MILLIS) | SerIn_flag) {
     if(gasMeter!=prevGasMeter){ // only write if value is changed (Even if changed down. Because maybe that 'll come in usefull someday)
-    // Arduino EEPROM libs do that automatically, but my "wear leveling" (by incrementing addres each time) ruins that, also I don't know if ESP EEPROM libs do that at all anyway...   
-    
-    // first increment the addres (because on startup it is read from location last written and now it should write the next location)
-      if(globalEepromAddres<(NUM_EEPROM*sizeof(float))) {
-        globalEepromAddres+=sizeof(float);
-        }else globalEepromAddres = 0;
-    // then write
-    splitsMeterstandInBytes schrijfdit;
-    schrijfdit.meterstand = gasMeter;
-    WriteEeprom(globalEepromAddres,&schrijfdit);  
-    EEPROM.commit(); // actually write.
-    last_Write=millis(); // don' t forget this!
-    prevGasMeter = gasMeter; 
-    Serial.println(F("Written gasmeterstand to EEPROM location "));
-    Serial.print(globalEepromAddres);
-    Serial.print("\n");
-    SerIn_flag = false;
+      // Arduino EEPROM libs do that automatically, but my "wear leveling" (by incrementing addres each time) ruins that, also I don't know if ESP EEPROM libs do that at all anyway...   
+      
+      // first increment the addres (because on startup it is read from location last written and now it should write the next location)
+        if(globalEepromAddres<(NUM_EEPROM*sizeof(float))) {
+          globalEepromAddres+=sizeof(float);
+          }else globalEepromAddres = 0;
+      // then write
+      splitsMeterstandInBytes schrijfdit;
+      schrijfdit.meterstand = gasMeter;
+      WriteEeprom(globalEepromAddres,&schrijfdit);  
+      EEPROM.commit(); // actually write.
+      last_Write=millis(); // don' t forget this!
+      prevGasMeter = gasMeter; 
+      Serial.println(F("Written gasmeterstand to EEPROM location "));
+      Serial.print(globalEepromAddres);
+      Serial.print("\n");
+      SerIn_flag = false;
     }
-  }
-  
+  } 
 }  
 
 // Function to connect and reconnect as necessary to the MQTT server.
